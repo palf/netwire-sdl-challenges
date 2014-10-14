@@ -11,8 +11,8 @@ Executable Challenge1
   default-language: Haskell2010
   hs-source-dirs: .
   build-depends:
-    base >= 4.5 && < 4.7,
-    SDL,
+    base >= 4.5,
+    sdl2,
     netwire
   main-is: Challenge1.hs
 
@@ -20,8 +20,8 @@ Executable Challenge2
   default-language: Haskell2010
   hs-source-dirs: .
   build-depends:
-    base >= 4.5 && < 4.7,
-    SDL,
+    base >= 4.5,
+    sdl2,
     netwire,
     containers
   main-is: Challenge2.hs
@@ -30,8 +30,8 @@ Executable Challenge3
   default-language: Haskell2010
   hs-source-dirs: .
   build-depends:
-    base >= 4.5 && < 4.7,
-    SDL,
+    base >= 4.5,
+    sdl2,
     netwire,
     containers
   main-is: Challenge3.hs
