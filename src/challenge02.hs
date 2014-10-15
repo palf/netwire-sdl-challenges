@@ -39,21 +39,13 @@ wireLoop session wire x micro = do
     wireLoop session' wire' x' micro
 
 
-  go keysDown screen s w x = do
+drawFunc :: SDL.Renderer -> Double -> IO ()
+drawFunc renderer x = do
     keysDown' <- parseEvents keysDown
     (ds, s') <- stepSession s
     (ex, w') <- stepWire w ds (Right keysDown')
     let x' = either (const 0) id ex
 
-    (SDL.mapRGB . SDL.surfaceGetPixelFormat) screen 255 255 255 >>=
-        SDL.fillRect screen Nothing
-
-    (SDL.mapRGB . SDL.surfaceGetPixelFormat) screen 0 50 200 >>=
-        SDL.fillRect screen (Just $ SDL.Rect (round x) 0 50 50)
-
-    SDL.flip screen
-    SDL.delay (1000 `div` 60)
-    go keysDown' screen s' w' x'
 
 
 
