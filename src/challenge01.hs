@@ -16,8 +16,8 @@ wireLoop session wire x micro = do
     wireLoop session' wire' x' micro
 
 
--- doDraw :: forall a. Integral a => SDL.Renderer -> a -> IO ()
-doDraw renderer x = makeDrawing (drawSquareAt x' 100) renderer
+-- drawWith :: forall a. Integral a => SDL.Renderer -> a -> IO ()
+drawWith renderer x = makeDrawing (drawSquareAt x' 100) renderer
     where x' = round x :: Int
 
 
@@ -33,4 +33,4 @@ input = Netwire.integral 0 + pure 8
 
 main :: IO ()
 main = withSDLWindow ("Challenge 01", 200, 200) $ \renderer ->
-    wireLoop clockSession_ input 10 (doDraw renderer)
+    wireLoop clockSession_ input 10 (drawWith renderer)
