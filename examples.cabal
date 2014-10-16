@@ -41,3 +41,18 @@ executable challenge03
   main-is: challenge03.hs
   ghc-options: -Wall -fno-warn-unused-do-bind
 
+
+
+
+executable keys
+  default-language: Haskell2010
+  hs-source-dirs: src
+  build-depends:
+    base >= 4.5,
+    sdl2,
+    netwire,
+    containers,
+    transformers
+  main-is: keys.hs
+  ghc-options: -Wall -fno-warn-unused-do-bind
+

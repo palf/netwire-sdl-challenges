@@ -8,21 +8,20 @@ import Control.Wire
 import Prelude hiding ((.), id)
 
 
+main :: IO ()
+main = withSDLWindow ("Challenge 01", 200, 200) $ \renderer ->
+    wireLoop clockSession_ challenge01 10 (drawFunc renderer)
+
+
 challenge01 :: (Monad m, HasTime t s) => Wire s e m Double Double
 challenge01 = Netwire.integral 0 + pure 8
 
 
-main :: IO ()
-main = withSDLWindow ("Challenge 01", 200, 200) $ \renderer ->
-    wireLoop clockSession_ challenge01 0 (drawFunc renderer)
-
-
 wireLoop :: (Monad m, Num a) => Session m s -> Wire s e m a a -> a -> (a -> m b) -> m c
--- wireLoop :: (HasTime t s) => Session IO s -> Wire s e IO Double Double -> Double -> (Double -> IO a) -> IO b
 wireLoop session wire x micro = do
     (ds, session') <- stepSession session
     (ex, wire') <- stepWire wire ds (Right x)
-    let x' = either (const 0) id ex
+    let x' = either (const 50) id ex
     micro x'
     wireLoop session' wire' x' micro
 

@@ -28,8 +28,8 @@ initializeSDL flags = void $ SDL.init (bitwiseOr flags)
 createWindow :: (String, Int, Int) -> IO SDL.Window
 createWindow (windowTitle, windowWidth, windowHeight) = withCAString windowTitle $ \title ->
     SDL.createWindow title x y w h SDL.windowFlagShown
-    where x = SDL.windowPosUndefined
-          y = SDL.windowPosUndefined
+    where x = 0
+          y = 0
           w = fromIntegral windowWidth
           h = fromIntegral windowHeight
 
