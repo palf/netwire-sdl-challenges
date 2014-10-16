@@ -1,5 +1,3 @@
-{-# LANGUAGE StandaloneDeriving #-}
-
 import qualified FRP.Netwire as Netwire hiding (empty)
 import qualified Graphics.UI.SDL as SDL
 
@@ -19,18 +17,18 @@ import Graphics.UI.SDL.Types
 import Prelude hiding ((.), id, null, filter)
 
 
-challenge2 :: (Monad m, HasTime t s) => Wire s () m (Fishy) Double
-challenge2 = Netwire.integral 0 . challenge2_velocity
+challenge2 :: (Monad m, HasTime t s) => Wire s () m Fishy Double
+challenge2 = Netwire.integral 0 . velocity
 
 
-challenge2_velocity :: (Monad m, Monoid e) => Wire s e m (Fishy) Double
-challenge2_velocity  =  pure (-20) . when (keyDown LeftKey)
+velocity :: (Monad m, Monoid e) => Wire s e m Fishy Double
+velocity  =  pure (-20) . when (keyDown LeftKey)
                     <|> pure 20 . when (keyDown RightKey)
                     <|> pure 0
 
 
 main :: IO ()
-main = withSDLWindow ("Challenge 02", 200, 200) $ \renderer -> do
+main = withSDLWindow ("Challenge 02", 200, 200) $ \renderer ->
     wireLoop clockSession challenge2 0 (drawFunc renderer)
 
 

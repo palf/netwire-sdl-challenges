@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE KindSignatures #-}
 
 import Common.LifeCycle
 import Common.Drawing
@@ -9,48 +8,22 @@ import Data.Either
 import Control.Wire
 import Prelude hiding ((.), id)
 
-import qualified Graphics.UI.SDL as SDL
+
+main :: IO ()
+main = withSDLWindow ("Keys Example", 200, 200) $ \renderer ->
+    wireLoop clockSession_ keyExample 10 (drawFunc renderer)
 
 
--- wireLoop :: Session IO (s -> Timed NominalDiffTime s) -> Wire (s -> Timed NominalDiffTime s) e IO Int Int -> (Int -> IO ()) -> IO b
-wireLoop :: forall (m :: * -> *) s e a b c.
-                  (Monad m, Num a, Num b) =>
-                  Session m s -> Wire s e m a b -> (b -> m c) -> m c
-wireLoop session wire macro = do
+wireLoop :: (Monad m, Num a) => Session m s -> Wire s e m a a -> a -> (a -> m b) -> m c
+wireLoop session wire x micro = do
     (ds, session') <- stepSession session
-    (ex, wire') <- stepWire wire ds (Right 4)
-    let x' = either (const 10) id ex
-    macro x'
-    wireLoop session' wire' macro
+    (ex, wire') <- stepWire wire ds (Right x)
+    let x' = either (const 50) id ex
+    micro x'
+    wireLoop session' wire' x' micro
 
 --------------------------------
 
--- keyExample :: (HasTime t s) => Wire s () IO a Int
-keyExample :: forall a s. Wire s () IO a Int
+keyExample :: forall a s. Wire s () IO a Double
 keyExample = isKeyDown LeftKey . pure 40 <|> pure 60
-
-
-main :: IO ()
-main = withSDLWindow ("Keys Example", 200, 200) $ \renderer -> do
-    setColorRed renderer
-    drawSquare renderer 4
-
-    wireClock keyExample $ \x -> do
-        return ()
-
-
-
-
-wireClock :: forall b e s.
-                   Wire (s -> Timed NominalDiffTime s) e IO Int Int
-                   -> (Int -> IO b) -> IO b
-wireClock = wireLoop clockSession
-
-
-drawSquare :: SDL.Renderer -> Int -> IO ()
-drawSquare renderer x = withBlankScreen renderer $ \r -> drawRect r x x 20 (20 :: Int)
-
-
-
--- Control.Category (.) :: Category cat => cat b c -> cat a b -> cat a c
 

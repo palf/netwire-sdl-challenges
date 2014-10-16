@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE KindSignatures #-}
 
 module Common.Input (
     Key (..),
@@ -20,44 +19,53 @@ import Prelude hiding ((.), id)
 
 
 
-data Key = LeftKey | RightKey | NoKey deriving (Show, Eq, Ord, Read)
+data Key
+    = RightKey
+    | LeftKey
+    | DownKey
+    | UpKey
+    | NoKey
+    deriving (Show, Eq, Ord, Read)
 
 
 instance Enum Key where
-  fromEnum LeftKey = 79
-  fromEnum RightKey = 80
+  fromEnum RightKey = 79
+  fromEnum LeftKey = 80
+  fromEnum DownKey = 81
+  fromEnum UpKey = 82
   fromEnum NoKey = 0
 
   toEnum 79 = RightKey
   toEnum 80 = LeftKey
+  toEnum 81 = DownKey
+  toEnum 82 = UpKey
   toEnum _ = NoKey
 
 
 getKeyState :: IO [Int]
-getKeyState = alloca $ \numkeysPtr -> do
-    keysPtr <- SDL.getKeyboardState numkeysPtr
-    numkeys <- peek numkeysPtr
-    wordset <- peekArray (fromIntegral numkeys) keysPtr
+getKeyState = do
+    SDL.pumpEvents -- not necessary if we consume the event list
+    alloca $ \numkeysPtr -> do
+        keysPtr <- SDL.getKeyboardState numkeysPtr
+        numkeys <- peek numkeysPtr
+        wordset <- peekArray (fromIntegral numkeys) keysPtr
 
-    let stuff = map fromIntegral wordset
-    let things = elemIndices (1::Int) stuff
-
-    -- print keysPtr
-    return things
+        return $ elemIndices (1::Int) (map fromIntegral wordset)
 
 
 checkForKey :: Key -> IO Bool
 checkForKey key = elem (fromEnum key) <$> getKeyState
 
 
-keyCheck :: Key -> a -> IO (Either () Int)
+keyCheck :: (Show a) => Key -> a -> IO (Either () Double)
 keyCheck key x = do
-    -- print x
-    s <- checkForKey key
-    return $ case s of
-        True   -> Right 50
-        False  -> Left ()
+    print x
+    liftM (select () 0) (checkForKey key)
 
 
-isKeyDown :: Key -> Wire s () IO a Int
+select :: a -> b -> Bool -> Either a b
+select l r p = if p then Right r else Left l
+
+
+isKeyDown :: (Show a) => Key -> Wire s () IO a Double
 isKeyDown key = mkGen_ $ keyCheck key

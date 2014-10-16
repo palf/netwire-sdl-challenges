@@ -1,5 +1,4 @@
 import qualified FRP.Netwire as Netwire
-import qualified Graphics.UI.SDL as SDL
 
 import Common.Drawing
 import Common.LifeCycle
@@ -24,14 +23,3 @@ wireLoop session wire x micro = do
     let x' = either (const 50) id ex
     micro x'
     wireLoop session' wire' x' micro
-
-
-drawFunc :: (RealFrac a) => SDL.Renderer -> a -> IO ()
-drawFunc renderer x = void $ withBlankScreen renderer (drawSquareAt x' 0)
-    where x' = round x :: Int
-
-
-drawSquareAt :: (Integral a) => a -> a -> SDL.Renderer -> IO ()
-drawSquareAt x y renderer = do
-    setColorRed renderer
-    drawRect renderer x y 50 50

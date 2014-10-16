@@ -1,7 +1,5 @@
 module Common.Drawing (
-    withBlankScreen,
-    setColorRed,
-    drawRect
+    drawFunc
 ) where
 
 
@@ -12,11 +10,11 @@ import Foreign.Marshal.Utils (with)
 import Graphics.UI.SDL.Types
 
 
-withBlankScreen :: SDL.Renderer -> (SDL.Renderer -> IO a) -> IO ()
+withBlankScreen :: SDL.Renderer -> IO a -> IO ()
 withBlankScreen renderer operation = do
-    SDL.setRenderDrawColor renderer 0xFF 0xFF 0xFF 0xFF
+    SDL.setRenderDrawColor renderer 0xFF 0xFF 0xFF 0x00
     SDL.renderClear renderer
-    operation renderer
+    operation
     SDL.renderPresent renderer
 
 
@@ -25,8 +23,7 @@ setColorRed renderer = void $ SDL.setRenderDrawColor renderer 0xFF 0x00 0x00 0xF
 
 
 drawRect :: (Integral a) => SDL.Renderer -> a -> a -> a -> a -> IO ()
-drawRect renderer x y w h = do
-    void $ with squareRect (SDL.renderFillRect renderer)
+drawRect renderer x y w h = void $ with squareRect (SDL.renderFillRect renderer)
     where squareRect = toRect x y w h
 
 
@@ -36,3 +33,16 @@ toRect x y w h = SDL.Rect {
     rectY = fromIntegral y,
     rectW = fromIntegral w,
     rectH = fromIntegral h }
+
+
+
+
+drawFunc :: (RealFrac a) => SDL.Renderer -> a -> IO ()
+drawFunc renderer x = void $ withBlankScreen renderer (drawSquareAt x' 0 renderer)
+    where x' = round x :: Int
+
+
+drawSquareAt :: (Integral a) => a -> a -> SDL.Renderer -> IO ()
+drawSquareAt x y renderer = do
+    setColorRed renderer
+    drawRect renderer x y 50 50

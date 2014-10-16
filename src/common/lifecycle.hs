@@ -4,6 +4,7 @@ module Common.LifeCycle (
 
 import qualified Graphics.UI.SDL as SDL
 
+import Control.Exception
 import Control.Monad
 import Data.Bits
 import Foreign.C.String
@@ -17,8 +18,7 @@ withSDLWindow windowData renderOperation = do
     window <- createWindow windowData
     renderer <- createRenderer window (-1) [SDL.rendererFlagAccelerated, SDL.rendererFlagPresentVSync]
 
-    renderOperation renderer
-    sdlCleanup window renderer
+    void $ finally (renderOperation renderer) (sdlCleanup window renderer)
 
 
 initializeSDL :: [Word32] -> IO ()
