@@ -13,6 +13,7 @@ executable challenge01
   build-depends:
     base >= 4.5,
     sdl2,
+    mtl,
     netwire
   main-is: challenge01.hs
   ghc-options: -Wall -fno-warn-unused-do-bind
@@ -24,8 +25,8 @@ executable challenge02
   build-depends:
     base >= 4.5,
     sdl2,
-    netwire,
-    containers
+    mtl,
+    netwire
   main-is: challenge02.hs
   ghc-options: -Wall -fno-warn-unused-do-bind
 
@@ -36,8 +37,8 @@ executable challenge03
   build-depends:
     base >= 4.5,
     sdl2,
-    netwire,
-    containers
+    mtl,
+    netwire
   main-is: challenge03.hs
   ghc-options: -Wall -fno-warn-unused-do-bind
 
@@ -50,9 +51,7 @@ executable keys
   build-depends:
     base >= 4.5,
     sdl2,
-    netwire,
-    containers,
-    transformers
+    mtl,
+    netwire
   main-is: keys.hs
   ghc-options: -Wall -fno-warn-unused-do-bind
-

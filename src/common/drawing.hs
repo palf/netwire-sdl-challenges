@@ -1,29 +1,44 @@
 module Common.Drawing (
-    drawFunc
+    makeDrawing,
+    withBlankScreen,
+    setColorRed,
+    drawRect,
+    Render
 ) where
-
 
 import qualified Graphics.UI.SDL as SDL
 
-import Control.Monad (void)
+import Control.Monad.Reader
 import Foreign.Marshal.Utils (with)
 import Graphics.UI.SDL.Types
 
 
-withBlankScreen :: SDL.Renderer -> IO a -> IO ()
-withBlankScreen renderer operation = do
-    SDL.setRenderDrawColor renderer 0xFF 0xFF 0xFF 0x00
-    SDL.renderClear renderer
+type Render a = ReaderT SDL.Renderer IO a
+
+
+makeDrawing :: Render a -> SDL.Renderer -> IO ()
+makeDrawing operation = runReaderT (withBlankScreen operation)
+
+
+withBlankScreen :: Render a -> Render ()
+withBlankScreen operation = do
+    renderer <- ask
+    liftIO $ SDL.setRenderDrawColor renderer 0xFF 0xFF 0xFF 0x00 >>
+             SDL.renderClear renderer
     operation
-    SDL.renderPresent renderer
+    liftIO $ SDL.renderPresent renderer
 
 
-setColorRed :: SDL.Renderer -> IO ()
-setColorRed renderer = void $ SDL.setRenderDrawColor renderer 0xFF 0x00 0x00 0xFF
+setColorRed :: Render ()
+setColorRed = do
+    renderer <- ask
+    void . liftIO $ SDL.setRenderDrawColor renderer 0xFF 0x00 0x00 0xFF
 
 
-drawRect :: (Integral a) => SDL.Renderer -> a -> a -> a -> a -> IO ()
-drawRect renderer x y w h = void $ with squareRect (SDL.renderFillRect renderer)
+drawRect :: (Integral a) => a -> a -> a -> a -> Render ()
+drawRect x y w h = do
+    renderer <- ask
+    void . liftIO $ with squareRect (SDL.renderFillRect renderer)
     where squareRect = toRect x y w h
 
 
@@ -33,16 +48,3 @@ toRect x y w h = SDL.Rect {
     rectY = fromIntegral y,
     rectW = fromIntegral w,
     rectH = fromIntegral h }
-
-
-
-
-drawFunc :: (RealFrac a) => SDL.Renderer -> a -> IO ()
-drawFunc renderer x = void $ withBlankScreen renderer (drawSquareAt x' 0 renderer)
-    where x' = round x :: Int
-
-
-drawSquareAt :: (Integral a) => a -> a -> SDL.Renderer -> IO ()
-drawSquareAt x y renderer = do
-    setColorRed renderer
-    drawRect renderer x y 50 50

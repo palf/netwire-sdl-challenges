@@ -18,7 +18,6 @@ import Foreign.Storable (peek)
 import Prelude hiding ((.), id)
 
 
-
 data Key
     = RightKey
     | LeftKey
@@ -57,15 +56,13 @@ checkForKey :: Key -> IO Bool
 checkForKey key = elem (fromEnum key) <$> getKeyState
 
 
-keyCheck :: (Show a) => Key -> a -> IO (Either () Double)
-keyCheck key x = do
-    print x
-    liftM (select () 0) (checkForKey key)
+keyCheck :: Key -> a -> IO (Either () ())
+keyCheck key x = liftM (select () ()) (checkForKey key)
 
 
 select :: a -> b -> Bool -> Either a b
 select l r p = if p then Right r else Left l
 
 
-isKeyDown :: (Show a) => Key -> Wire s () IO a Double
+isKeyDown :: Key -> Wire s () IO a ()
 isKeyDown key = mkGen_ $ keyCheck key
