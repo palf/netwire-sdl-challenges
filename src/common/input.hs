@@ -57,7 +57,7 @@ checkForKey key = elem (fromEnum key) <$> getKeyState
 
 
 keyCheck :: Key -> a -> IO (Either () ())
-keyCheck key x = liftM (select () ()) (checkForKey key)
+keyCheck key _ = liftM (select () ()) (checkForKey key)
 
 
 select :: a -> b -> Bool -> Either a b

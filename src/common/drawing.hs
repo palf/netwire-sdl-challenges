@@ -1,23 +1,25 @@
 module Common.Drawing (
-    makeDrawing,
+    runRender,
     withBlankScreen,
-    setColorRed,
+    setColor,
     drawRect,
-    Render
+    Render,
+    Color (..)
 ) where
 
 import qualified Graphics.UI.SDL as SDL
 
 import Control.Monad.Reader
 import Foreign.Marshal.Utils (with)
-import Graphics.UI.SDL.Types
+import qualified Graphics.UI.SDL.Types as Types
 
 
-type Render a = ReaderT SDL.Renderer IO a
+type Render = ReaderT SDL.Renderer IO
+data Color = Red
 
 
-makeDrawing :: Render a -> SDL.Renderer -> IO ()
-makeDrawing operation = runReaderT (withBlankScreen operation)
+runRender :: Render a -> SDL.Renderer -> IO ()
+runRender operation = runReaderT (withBlankScreen operation)
 
 
 withBlankScreen :: Render a -> Render ()
@@ -29,10 +31,8 @@ withBlankScreen operation = do
     liftIO $ SDL.renderPresent renderer
 
 
-setColorRed :: Render ()
-setColorRed = do
-    renderer <- ask
-    void . liftIO $ SDL.setRenderDrawColor renderer 0xFF 0x00 0x00 0xFF
+setColor :: Color -> Render ()
+setColor Red = ask >>= \renderer -> void . liftIO $ SDL.setRenderDrawColor renderer 0xFF 0x00 0x00 0xFF
 
 
 drawRect :: (Integral a) => a -> a -> a -> a -> Render ()
@@ -44,7 +44,7 @@ drawRect x y w h = do
 
 toRect :: (Integral a) => a -> a -> a -> a -> SDL.Rect
 toRect x y w h = SDL.Rect {
-    rectX = fromIntegral x,
-    rectY = fromIntegral y,
-    rectW = fromIntegral w,
-    rectH = fromIntegral h }
+    Types.rectX = fromIntegral x,
+    Types.rectY = fromIntegral y,
+    Types.rectW = fromIntegral w,
+    Types.rectH = fromIntegral h }

@@ -1,68 +1,121 @@
 {-# LANGUAGE Arrows #-}
-{-# LANGUAGE StandaloneDeriving #-}
-import Prelude hiding ((.), id, null, filter)
-import Control.Monad (void)
-import Control.Monad.Fix (MonadFix)
+{-# LANGUAGE RankNTypes #-}
+
+import Common.Drawing
+import Common.Input
+import Common.LifeCycle
+
 import Control.Wire hiding (empty)
-import Data.Monoid (Monoid)
-import Data.Set (Set, empty, insert, delete, null, filter)
+import FRP.Netwire
+import Prelude hiding ((.), id, null, filter)
+
+
 import qualified Graphics.UI.SDL as SDL
 
+
+type DiffTime = Timed NominalDiffTime ()
+
+
+wireLoop :: (Monad m, Num a) => Session m s -> Wire s e m a a -> a -> (a -> m b) -> m c
+wireLoop session wire x micro = do
+    (ds, session') <- stepSession session
+    (ex, wire') <- stepWire wire ds (Right x)
+    let x' = either (const 0) id ex
+    micro x'
+    wireLoop session' wire' x' micro
+
+
+drawWith :: forall a. (RealFrac a, Show a) => SDL.Renderer -> a -> IO ()
+drawWith renderer x = do
+    print x
+    runRender (drawSquareAt x' 100) renderer
+    where x' = round x :: Int
+
+
+drawSquareAt :: (Integral a) => a -> a -> Render ()
+drawSquareAt x y = do
+    setColor Red
+    drawRect (x - 25) (y - 25) 50 50
+
+
+
+collided :: (Ord a, Num a) => (a, a) -> a -> (a, Bool)
+collided (a, b) x
+  | x < a = (a, True)
+  | x > b = (b, True)
+  | otherwise = (x, False)
+
+
+-- position :: (Monad m, HasTime t s) => Wire s e m Double (Double, Bool)
+-- position = integral 0 >>> (arr $ collided (0, 150))
+
+-- arr $ collided (0, 150) :: Arrow ? a (a, Bool)
+
+
+position = integralWith' clamp 0
+    where
+        clamp p | p < 0 || p > 150 = (max 1 (min 149 p), True)
+                | otherwise        = (p, False)
+
+
+dampen :: (Fractional a, HasTime t s) => a -> Wire s e m a a
+dampen rate = integralWith' (rate *) 0
+
+
+constrain :: Double -> Double -> Double -> Double
+constrain lower upper x
+    | lower > upper = constrain upper lower x
+    | x < lower     = lower
+    | x > upper     = upper
+    | otherwise     = x
+
+
+limit :: Double -> Double -> Wire DiffTime () IO Double Double
+limit lower upper = mkSF_ $ constrain lower upper
+
+
+type Stuff = Int
+
+acceleration :: forall a s. Wire s () IO Stuff Double
+acceleration = pure (-200) . isKeyDown LeftKey
+    <|> pure 200 . isKeyDown RightKey
+    <|> pure 0
+
+
+velocity :: forall a. Wire DiffTime () IO (Double, Bool) Double
+velocity = integralWith bounce (0, False)
+-- velocity   (a) Double >>> Double (Double)  =  a Double
+
+
+bounce :: (w -> a -> a) -> a
+bounce w a = a
+
+
+integralWith' :: (Fractional a, HasTime t s) => (a -> a) -> a -> Wire s e m a a
+integralWith' correct = loop'
+    where
+    loop' x' =
+        mkPure $ \ds dx ->
+            let dt = realToFrac (dtime ds)
+                x = correct (x' + dt * dx)
+            in x' `seq` (Right x', loop' x)
+
+
+position :: forall a. Wire DiffTime () IO Double (Double, Bool)
+position = mkSF_ $ \x ->
+    if x > 200 then (200, True) else (x, False)
+
+
+input :: forall a. Wire DiffTime () IO a Double
+input = proc x -> do
+    accel <- acceleration -< x
+    rec (position, collides) <- position -< velocity
+        velocity <- velocity -< (accel, collides)
+    returnA -< position
+
+
+
+
 main :: IO ()
-main = SDL.withInit [SDL.InitEverything] $ do
-  screen <- SDL.setVideoMode 200 200 32 [SDL.SWSurface]
-  void $ go empty screen clockSession challenge3
-
- where
-
-  go keysDown screen s w = do
-    keysDown' <- parseEvents keysDown
-    (x, w', s') <- stepSession_ w s keysDown'
-
-    (SDL.mapRGB . SDL.surfaceGetPixelFormat) screen 255 255 255 >>=
-        SDL.fillRect screen Nothing
-
-    (SDL.mapRGB . SDL.surfaceGetPixelFormat) screen 0 50 200 >>=
-        SDL.fillRect screen (Just $ SDL.Rect (round x) 0 50 50)
-
-    SDL.flip screen
-    go keysDown' screen s' w'
-
-challenge3 :: (MonadFix m, Monoid e) => Wire e m (Set SDL.Keysym) Double
-challenge3 = proc keysDown -> do
-  accel <- acceleration -< keysDown
-  rec (position, collisions) <- position -< velocity
-      velocity <- velocity -< (accel, collisions)
-  returnA -< position
-
-acceleration :: (Monad m, Monoid e) => Wire e m (Set SDL.Keysym) Double
-acceleration  =  pure (-20) . when (keyDown SDL.SDLK_LEFT)
-             <|> pure 20 . when (keyDown SDL.SDLK_RIGHT)
-             <|> pure 0
-
-velocity :: Wire e m (Double, Bool) Double
-velocity = integralLim_ bounce 0
-  where bounce collisions _ v | collisions = -v
-                              | otherwise  = v
-
-position :: Wire e m Double (Double, Bool)
-position = accumT clamp (0, False)
-  where clamp dt (x, _) v =
-          let x' = x + dt * v
-              coll = x < 0 || x > 150
-              bounded = if coll then max 1 (min 149 x') else x'
-          in (bounded, coll)
-
-parseEvents :: Set SDL.Keysym -> IO (Set SDL.Keysym)
-parseEvents keysDown = do
-  event <- SDL.pollEvent
-  case event of
-    SDL.NoEvent -> return keysDown
-    SDL.KeyDown k -> parseEvents (insert k keysDown)
-    SDL.KeyUp k -> parseEvents (delete k keysDown)
-    _ -> parseEvents keysDown
-
-keyDown :: SDL.SDLKey -> Set SDL.Keysym -> Bool
-keyDown k = not . null . filter ((== k) . SDL.symKey)
-
-deriving instance Ord SDL.Keysym
+main = withSDLWindow ("Challenge 03", 200, 200) $ \renderer ->
+    wireLoop clockSession_ input 0 (drawWith renderer)

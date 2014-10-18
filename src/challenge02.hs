@@ -19,13 +19,13 @@ wireLoop session wire x micro = do
 
 
 -- drawWith :: forall a. Integral a => SDL.Renderer -> a -> IO ()
-drawWith renderer x = makeDrawing (drawSquareAt x' 100) renderer
+drawWith renderer x = runRender (drawSquareAt x' 100) renderer
     where x' = round x :: Int
 
 
 drawSquareAt :: (Integral a) => a -> a -> Render ()
 drawSquareAt x y = do
-    setColorRed
+    setColor Red
     drawRect (x - 25) (y - 25) 50 50
 
 
@@ -34,7 +34,7 @@ input = integral 0 . velocity
 
 
 velocity :: forall a s. Wire s () IO a Double
-velocity =  pure (-20) . isKeyDown LeftKey
+velocity = pure (-20) . isKeyDown LeftKey
     <|> pure 20 . isKeyDown RightKey
     <|> pure 0
 
