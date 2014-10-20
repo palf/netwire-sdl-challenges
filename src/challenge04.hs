@@ -9,22 +9,25 @@ import Control.Wire hiding (empty)
 import FRP.Netwire
 import Prelude hiding ((.), id, null, filter)
 
+import qualified Graphics.UI.SDL as SDL
 
 type DiffTime = Timed NominalDiffTime ()
+type Position = (Double, Double)
 
 
-wireLoop :: (Monad m, Num a) => Session m s -> Wire s e m a a -> a -> (a -> m b) -> m c
+wireLoop :: (Monad m) => Session m s -> Wire s e m Position Position -> Position -> (Position -> m b) -> m c
 wireLoop session wire x micro = do
     (ds, session') <- stepSession session
     (ex, wire') <- stepWire wire ds (Right x)
-    let x' = either (const 0) id ex
+    let x' = either (const (0, 0)) id ex
     micro x'
     wireLoop session' wire' x' micro
 
 
--- drawWith :: forall a. (RealFrac a, Show a) => SDL.Renderer -> a -> IO ()
-drawWith renderer x = runRender (drawSquareAt x' 100) renderer
+drawWith :: SDL.Renderer -> Position -> IO ()
+drawWith renderer (x, y) = runRender (drawSquareAt x' y') renderer
     where x' = round x :: Int
+          y' = round y :: Int
 
 
 drawSquareAt :: (Integral a) => a -> a -> Render ()
@@ -33,9 +36,15 @@ drawSquareAt x y = do
     drawRect (x - 25) (y - 25) 50 50
 
 
-acceleration :: Wire s () IO a Double
-acceleration = pure (-200) . isKeyDown LeftKey
+xAcceleration :: Wire s () IO a Double
+xAcceleration = pure (-200) . isKeyDown LeftKey
     <|> pure 200 . isKeyDown RightKey
+    <|> pure 0
+
+
+yAcceleration :: Wire s () IO a Double
+yAcceleration = pure (-200) . isKeyDown UpKey
+    <|> pure 200 . isKeyDown DownKey
     <|> pure 0
 
 
@@ -67,14 +76,26 @@ integralWith'' correct = loop'
             in x `seq` (Right (x, b), loop' x')
 
 
-input :: Wire DiffTime () IO a Double
-input = proc x -> do
-    accel <- acceleration -< x
+xInput :: Wire DiffTime () IO a Double
+xInput = proc x -> do
+    accel <- xAcceleration -< x
     rec (position, collides) <- position -< velocity
         velocity <- velocity -< (accel, collides)
     returnA -< position
 
 
+yInput :: Wire DiffTime () IO a Double
+yInput = proc y -> do
+    accel <- yAcceleration -< y
+    rec (position, collides) <- position -< velocity
+        velocity <- velocity -< (accel, collides)
+    returnA -< position
+
+
+input :: Wire DiffTime () IO a Position
+input = xInput &&& yInput
+
+
 main :: IO ()
-main = withSDLWindow ("Challenge 03", 200, 200) $ \renderer ->
-    wireLoop clockSession_ input 0 (drawWith renderer)
+main = withSDLWindow ("Challenge 04", 200, 200) $ \renderer ->
+    wireLoop clockSession_ input (0,0) (drawWith renderer)
