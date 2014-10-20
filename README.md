@@ -23,5 +23,4 @@ Friction:
 
 Velocity limiting:
 
-    cabal run challenge6
-
+    cabal run challenge06

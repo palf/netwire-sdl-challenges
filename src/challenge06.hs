@@ -15,13 +15,21 @@ type DiffTime = Timed NominalDiffTime ()
 type Position = (Double, Double)
 
 
-wireLoop :: (Monad m) => Session m s -> Wire s e m Position Position -> Position -> (Position -> m b) -> m c
-wireLoop session wire x micro = do
+
+stepEverything :: (Monad m) => (Session m s, Wire s e m a b, a) -> m (Session m s, Wire s e m a b, Either e b)
+stepEverything (session, wire, x) = do
     (ds, session') <- stepSession session
     (ex, wire') <- stepWire wire ds (Right x)
-    let x' = either (const (0, 0)) id ex
-    micro x'
-    wireLoop session' wire' x' micro
+    return (session', wire', ex)
+
+
+wireLoop :: (Show e) => Session IO s -> Wire s e IO a a -> a -> (a -> IO b) -> IO e
+wireLoop s w ix operation = loop' s w ix
+    where
+        loop' session wire x = do
+            (session', wire', x') <- stepEverything (session, wire, x)
+            let oploop ox = operation ox >> loop' session' wire' ox
+            either return oploop x'
 
 
 drawWith :: SDL.Renderer -> Position -> IO ()
@@ -62,13 +70,13 @@ yAcceleration = liftA (uncurry (-)) (downAcc &&& upAcc)
 
 velocity :: Wire DiffTime () IO (Double, Bool) Double
 velocity = integralWith bounce 0
-    where limit = fst . clamp (-120) 120
+    where limit = fst . clamp (-500) 500
           bounce collisions v | collisions = limit $ (-v) * 0.95
-                              | otherwise  = limit $  v  * 0.99
+                              | otherwise  = limit $   v  * 0.99
 
 
 position :: Wire DiffTime () IO Double (Double, Bool)
-position = integralWith'' (clamp 50 150) 100
+position = integralWith'' (clamp 25 175) 100
 
 
 clamp :: (Ord a) => a -> a -> a -> (a, Bool)
@@ -81,12 +89,12 @@ clamp lower upper x
 
 integralWith'' :: (Fractional a, HasTime t s) => (a -> (a, o)) -> a -> Wire s e m a (a, o)
 integralWith'' correct = loop'
-  where
-    loop' x =
-        mkPure $ \ds dx ->
-            let dt = realToFrac (dtime ds)
-                (x', b) = correct (x + dt * dx)
-            in x `seq` (Right (x, b), loop' x')
+    where
+        loop' x =
+            mkPure $ \ds dx ->
+                let dt = realToFrac (dtime ds)
+                    (x', b) = correct (x + dt * dx)
+                in x `seq` (Right (x, b), loop' x')
 
 
 positionFromAcceleration :: Wire DiffTime () IO a Double -> Wire DiffTime () IO a Double
@@ -97,12 +105,26 @@ positionFromAcceleration wire = proc x -> do
     returnA -< position
 
 
-input :: Wire DiffTime () IO a Position
-input = xInput &&& yInput
+quitWire :: Wire s () IO a ()
+-- inhibits unless escape is pressed
+-- quitWire = wireflip (isKeyDown EscapeKey)
+quitWire = isKeyUp EscapeKey
+
+
+-- wireflip :: Wire s () IO a () -> Wire s () IO a ()
+-- wireflip (WGen )
+
+
+accSum :: Wire DiffTime () IO a Position
+accSum = xInput &&& yInput
     where xInput = positionFromAcceleration xAcceleration
           yInput = positionFromAcceleration yAcceleration
 
 
+input :: Wire DiffTime () IO a Position
+input = accSum . quitWire
+
+
 main :: IO ()
-main = withSDLWindow ("Challenge 06", 200, 200) $ \renderer ->
+main = withSDLWindow ("Challenge 06", 200, 200) $ \renderer -> do
     wireLoop clockSession_ input (0,0) (drawWith renderer)

@@ -3,7 +3,7 @@
 module Common.Input (
     Key (..),
     isKeyDown,
-    checkForKey
+    isKeyUp
 ) where
 
 import qualified Graphics.UI.SDL as SDL
@@ -19,7 +19,8 @@ import Prelude hiding ((.), id)
 
 
 data Key
-    = RightKey
+    = EscapeKey
+    | RightKey
     | LeftKey
     | DownKey
     | UpKey
@@ -28,17 +29,19 @@ data Key
 
 
 instance Enum Key where
-  fromEnum RightKey = 79
-  fromEnum LeftKey = 80
-  fromEnum DownKey = 81
-  fromEnum UpKey = 82
-  fromEnum NoKey = 0
+    fromEnum EscapeKey = 41
+    fromEnum RightKey = 79
+    fromEnum LeftKey = 80
+    fromEnum DownKey = 81
+    fromEnum UpKey = 82
+    fromEnum NoKey = 0
 
-  toEnum 79 = RightKey
-  toEnum 80 = LeftKey
-  toEnum 81 = DownKey
-  toEnum 82 = UpKey
-  toEnum _ = NoKey
+    toEnum 41 = EscapeKey
+    toEnum 79 = RightKey
+    toEnum 80 = LeftKey
+    toEnum 81 = DownKey
+    toEnum 82 = UpKey
+    toEnum _ = NoKey
 
 
 getKeyState :: IO [Int]
@@ -66,3 +69,10 @@ select l r p = if p then Right r else Left l
 
 isKeyDown :: Key -> Wire s () IO a ()
 isKeyDown key = mkGen_ $ keyCheck key
+
+
+isKeyUp :: Key -> Wire s () IO a ()
+isKeyUp key = mkGen_ $ keyCheck' key
+    where keyCheck' key _ = liftM (select () ()) (checkForKey' key)
+          checkForKey' key = not . elem (fromEnum key) <$> getKeyState
+
