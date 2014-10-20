@@ -10,12 +10,14 @@ import Prelude hiding ((.), id)
 
 
 wireLoop :: (Monad m, Num a) => Session m s -> Wire s e m a a -> a -> (a -> m b) -> m c
-wireLoop session wire x micro = do
-    (ds, session') <- stepSession session
-    (ex, wire') <- stepWire wire ds (Right x)
-    let x' = either (const 0) id ex
-    micro x'
-    wireLoop session' wire' x' micro
+wireLoop session wire x drawInstruction = loop' session wire x
+    where
+        loop' session' wire' x' = do
+            (ds, session'') <- stepSession session'
+            (ex, wire'') <- stepWire wire' ds (Right x')
+            let x'' = either (const 0) id ex
+            drawInstruction x''
+            loop' session'' wire'' x''
 
 
 -- drawWith :: forall a. Integral a => SDL.Renderer -> a -> IO ()
