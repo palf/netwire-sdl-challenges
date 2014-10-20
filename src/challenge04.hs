@@ -23,9 +23,7 @@ wireLoop session wire x micro = do
 
 
 -- drawWith :: forall a. (RealFrac a, Show a) => SDL.Renderer -> a -> IO ()
-drawWith renderer x = do
-    print x
-    runRender (drawSquareAt x' 100) renderer
+drawWith renderer x = runRender (drawSquareAt x' 100) renderer
     where x' = round x :: Int
 
 
