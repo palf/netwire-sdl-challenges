@@ -62,8 +62,9 @@ yAcceleration = liftA (uncurry (-)) (downAcc &&& upAcc)
 
 velocity :: Wire DiffTime () IO (Double, Bool) Double
 velocity = integralWith bounce 0
-    where bounce collisions v | collisions = -v
-                              | otherwise  = v
+    where limit = fst . clamp (-120) 120
+          bounce collisions v | collisions = limit $ (-v) * 0.95
+                              | otherwise  = limit $  v  * 0.99
 
 
 position :: Wire DiffTime () IO Double (Double, Bool)
@@ -103,5 +104,5 @@ input = xInput &&& yInput
 
 
 main :: IO ()
-main = withSDLWindow ("Challenge 04", 200, 200) $ \renderer ->
+main = withSDLWindow ("Challenge 06", 200, 200) $ \renderer ->
     wireLoop clockSession_ input (0,0) (drawWith renderer)
