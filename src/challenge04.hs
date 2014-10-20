@@ -36,16 +36,28 @@ drawSquareAt x y = do
     drawRect (x - 25) (y - 25) 50 50
 
 
+leftAcc :: Wire s () IO a Double
+leftAcc = pure 200 . isKeyDown LeftKey <|> pure 0
+
+
+rightAcc :: Wire s () IO a Double
+rightAcc = pure 200 . isKeyDown RightKey <|> pure 0
+
+
+upAcc :: Wire s () IO a Double
+upAcc = pure 200 . isKeyDown UpKey <|> pure 0
+
+
+downAcc :: Wire s () IO a Double
+downAcc = pure 200 . isKeyDown DownKey <|> pure 0
+
+
 xAcceleration :: Wire s () IO a Double
-xAcceleration = pure (-200) . isKeyDown LeftKey
-    <|> pure 200 . isKeyDown RightKey
-    <|> pure 0
+xAcceleration = liftA (uncurry (-)) (rightAcc &&& leftAcc)
 
 
 yAcceleration :: Wire s () IO a Double
-yAcceleration = pure (-200) . isKeyDown UpKey
-    <|> pure 200 . isKeyDown DownKey
-    <|> pure 0
+yAcceleration = liftA (uncurry (-)) (downAcc &&& upAcc)
 
 
 velocity :: Wire DiffTime () IO (Double, Bool) Double
