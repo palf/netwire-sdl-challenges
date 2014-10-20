@@ -105,26 +105,20 @@ positionFromAcceleration wire = proc x -> do
     returnA -< position
 
 
-quitWire :: Wire s () IO a ()
--- inhibits unless escape is pressed
--- quitWire = wireflip (isKeyDown EscapeKey)
+quitWire :: (Monoid e) => Wire s e IO a Key
 quitWire = isKeyUp EscapeKey
 
 
--- wireflip :: Wire s () IO a () -> Wire s () IO a ()
--- wireflip (WGen )
-
-
-accSum :: Wire DiffTime () IO a Position
-accSum = xInput &&& yInput
+coordinateWire :: Wire DiffTime () IO a Position
+coordinateWire = xInput &&& yInput
     where xInput = positionFromAcceleration xAcceleration
           yInput = positionFromAcceleration yAcceleration
 
 
 input :: Wire DiffTime () IO a Position
-input = accSum . quitWire
+input = coordinateWire . quitWire
 
 
 main :: IO ()
-main = withSDLWindow ("Challenge 06", 200, 200) $ \renderer -> do
+main = withSDLWindow ("Challenge 06", 200, 200) $ \renderer ->
     wireLoop clockSession_ input (0,0) (drawWith renderer)

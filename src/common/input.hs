@@ -8,7 +8,9 @@ module Common.Input (
 
 import qualified Graphics.UI.SDL as SDL
 
+import Control.Applicative
 import Control.Monad hiding (when)
+import Control.Monad.Trans
 import Control.Wire
 import Data.Either
 import Data.List
@@ -55,24 +57,18 @@ getKeyState = do
         return $ elemIndices (1::Int) (map fromIntegral wordset)
 
 
-checkForKey :: Key -> IO Bool
-checkForKey key = elem (fromEnum key) <$> getKeyState
-
-
-keyCheck :: Key -> a -> IO (Either () ())
-keyCheck key _ = liftM (select () ()) (checkForKey key)
+keyIsDown :: (MonadIO m, Functor m) => Key -> m Bool
+keyIsDown key = elem (fromEnum key) <$> liftIO getKeyState
 
 
 select :: a -> b -> Bool -> Either a b
 select l r p = if p then Right r else Left l
 
 
-isKeyDown :: Key -> Wire s () IO a ()
-isKeyDown key = mkGen_ $ keyCheck key
+isKeyDown :: (Functor m, MonadIO m, Monoid e) => Key -> Wire s e m a Key
+isKeyDown key = mkGen_ $ \_ -> liftM (select mempty key) (keyIsDown key)
 
 
-isKeyUp :: Key -> Wire s () IO a ()
-isKeyUp key = mkGen_ $ keyCheck' key
-    where keyCheck' key _ = liftM (select () ()) (checkForKey' key)
-          checkForKey' key = not . elem (fromEnum key) <$> getKeyState
+isKeyUp :: (Functor m, MonadIO m, Monoid e) => Key -> Wire s e m a Key
+isKeyUp key = mkGen_ $ \_ -> liftM (select mempty key) (not <$> keyIsDown key)
 
