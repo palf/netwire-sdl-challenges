@@ -9,7 +9,6 @@ import Control.Wire hiding (empty)
 import FRP.Netwire
 import Prelude hiding ((.), id, null, filter)
 
-import qualified Graphics.UI.SDL as SDL
 
 type DiffTime = Timed NominalDiffTime ()
 type Position = (Double, Double)
@@ -23,7 +22,7 @@ stepEverything (session, wire, x) = do
     return (session', wire', ex)
 
 
-wireLoop :: (Show e) => Session IO s -> Wire s e IO a a -> a -> (a -> IO b) -> IO e
+wireLoop :: Session IO s -> Wire s e IO a a -> a -> (a -> IO b) -> IO e
 wireLoop s w ix operation = loop' s w ix
     where
         loop' session wire x = do
@@ -32,7 +31,7 @@ wireLoop s w ix operation = loop' s w ix
             either return oploop x'
 
 
-drawWith :: SDL.Renderer -> Position -> IO ()
+-- drawWith :: SDL.Renderer -> Position -> IO ()
 drawWith renderer (x, y) = runRender (drawSquareAt x' y') renderer
     where x' = round x :: Int
           y' = round y :: Int
